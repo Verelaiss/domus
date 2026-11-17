@@ -1,0 +1,490 @@
+
+/* ========================================
+   01. ESTRUTURA GERAL DA APLICAÇÃO
+======================================== */
+
+.app {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* ========================================
+   02. CABEÇALHO E IDENTIDADE
+======================================== */
+
+.cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0 28px;
+}
+
+.cabecalho h1 {
+  margin: 0;
+  font-size: 36px;
+  color: #17613d;
+}
+
+/* Textos secundários da interface */
+.cabecalho p,
+.titulo-secao p,
+.produto p {
+  margin: 5px 0 0;
+  color: #718078;
+}
+
+/* Identificação do lar e contador de produtos */
+.identidade,
+.contador {
+  background: #e3eee6;
+  color: #17613d;
+  padding: 9px 15px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+/* ========================================
+   03. MENU DE NAVEGAÇÃO
+======================================== */
+
+.navegacao {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 35px;
+  border-bottom: 1px solid #dfe7df;
+  padding-bottom: 14px;
+}
+
+.navegacao button {
+  border: none;
+  background: transparent;
+  color: #69796f;
+  padding: 12px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+/* Destaca a página selecionada */
+.navegacao button.ativo {
+  background: #17613d;
+  color: white;
+}
+
+/* ========================================
+   04. TÍTULOS DAS SEÇÕES
+======================================== */
+
+.titulo-secao {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.titulo-secao h2 {
+  margin: 0;
+  font-size: 25px;
+}
+
+/* ========================================
+   05. LISTAGEM DE PRODUTOS
+======================================== */
+
+.lista {
+  display: grid;
+  gap: 12px;
+}
+
+/* Cartão individual de produto */
+.produto {
+  background: white;
+  border: 1px solid #e4ebe5;
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.produto h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+/* Informações de quantidade disponível */
+.quantidade {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.quantidade strong {
+  font-size: 24px;
+  color: #17613d;
+}
+
+.quantidade span {
+  color: #718078;
+  font-size: 12px;
+}
+
+/* Indicação de produto esgotado */
+.esgotado {
+  color: #b33939;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Mensagem exibida quando uma lista está vazia */
+.vazio {
+  background: white;
+  border: 1px dashed #cbd9ce;
+  border-radius: 14px;
+  padding: 40px 20px;
+  text-align: center;
+  color: #718078;
+}
+
+/* ========================================
+   06. BOTÕES PRINCIPAIS
+======================================== */
+
+/* Botões de cadastro e salvamento */
+.botao-novo,
+.botao-salvar {
+  background: #17613d;
+  color: white;
+  border: none;
+  border-radius: 9px;
+  padding: 12px 18px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.botao-novo {
+  margin-bottom: 20px;
+}
+
+/* Botão de cancelamento */
+.botao-cancelar {
+  background: #eef1ee;
+  color: #20352a;
+  border: none;
+  border-radius: 9px;
+  padding: 12px 18px;
+  cursor: pointer;
+}
+
+/* Impede interação visual durante o salvamento */
+.botao-salvar:disabled,
+.botao-cancelar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Botão utilizado para registrar consumo */
+.botao-consumir {
+  margin-top: 8px;
+  padding: 8px 14px;
+  background: #eef1ee;
+  color: #17613d;
+  border: 1px solid #cbd9ce;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Efeito ao passar o mouse */
+.botao-consumir:hover {
+  background: #dce9df;
+}
+
+/* Bloqueia visualmente o botão durante a baixa */
+.botao-consumir:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   07. FORMULÁRIOS DE CADASTRO E COMPRAS
+======================================== */
+
+/* Estrutura compartilhada pelos formulários */
+.formulario-produto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: white;
+  border: 1px solid #e4ebe5;
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 22px;
+}
+
+.formulario-produto h3 {
+  margin: 0 0 8px;
+}
+
+/* Rótulos dos campos */
+.formulario-produto label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Campos de texto, quantidade, data e seleção */
+.formulario-produto input,
+.formulario-produto select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #cbd9ce;
+  border-radius: 8px;
+  font: inherit;
+  background: white;
+  color: #20352a;
+}
+
+/* Destaca o campo selecionado */
+.formulario-produto input:focus,
+.formulario-produto select:focus {
+  outline: 2px solid #17613d;
+  outline-offset: 1px;
+}
+
+/* Alinhamento dos botões dentro dos formulários */
+.acoes-formulario {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* ========================================
+   08. MENSAGENS DE SUCESSO E ERRO
+======================================== */
+
+/* Confirmações de consumo e compra */
+.mensagem-consumo {
+  background-color: #e8f5ec;
+  color: #17613d;
+  border: 1px solid #b7d9c2;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 16px 0 20px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Erros de cadastro, compra ou comunicação */
+.erro {
+  background-color: #fff0f0;
+  color: #a12626;
+  border: 1px solid #efc2c2;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 16px 0;
+  line-height: 1.5;
+}
+
+/* ========================================
+   09. RESPONSIVIDADE
+   Ajustes para telas menores que 600px
+======================================== */
+
+@media (max-width: 600px) {
+  .app {
+    padding: 16px;
+  }
+
+  .cabecalho h1 {
+    font-size: 29px;
+  }
+
+  .navegacao button {
+    padding: 11px;
+    flex: 1;
+    font-size: 14px;
+  }
+
+  .produto {
+    padding: 16px;
+  }
+}
+
+/* ========================================
+   10. CONTROLES DO ESTOQUE
+======================================== */
+
+.controles-estoque {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* Busca e cadastro na mesma linha */
+.linha-busca {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.linha-busca input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid #cbd9ce;
+  border-radius: 9px;
+  background: white;
+  color: #20352a;
+  font: inherit;
+  font-size: 14px;
+}
+
+.linha-busca input:focus {
+  outline: 2px solid #17613d;
+  outline-offset: 1px;
+}
+
+.linha-busca .botao-novo {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+/* Filtros por categoria */
+.categorias-estoque {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.categorias-estoque button {
+  padding: 8px 16px;
+  border: 1px solid #d6e3d9;
+  border-radius: 20px;
+  background: white;
+  color: #52675a;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.categorias-estoque button:hover {
+  background: #e3eee6;
+}
+
+.categorias-estoque button.ativo {
+  background: #17613d;
+  border-color: #17613d;
+  color: white;
+}
+
+/* Adaptação para celulares */
+@media (max-width: 600px) {
+  .linha-busca {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .linha-busca input {
+    flex: auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .linha-busca .botao-novo {
+    width: 100%;
+  }
+
+  .categorias-estoque {
+    gap: 8px;
+  }
+
+  .categorias-estoque button {
+    padding: 8px 12px;
+  }
+}
+
+/* ========================================
+   11. TABELA COMPACTA DE ESTOQUE
+======================================== */
+
+.tabela-estoque {
+  border: 1px solid #e4ebe5;
+  border-radius: 14px;
+  overflow: hidden;
+  background: white;
+}
+
+.linha-estoque {
+  display: grid;
+  grid-template-columns: minmax(120px, 2fr) repeat(3, minmax(65px, 1fr)) 100px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e4ebe5;
+  font-size: 14px;
+}
+
+.linha-estoque:last-child {
+  border-bottom: none;
+}
+
+.linha-estoque > :not(:first-child) {
+  text-align: center;
+}
+
+.cabecalho-estoque {
+  background: #f5f8f5;
+  color: #718078;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.total-disponivel {
+  color: #17613d;
+}
+
+.linha-estoque .botao-consumir {
+  margin-top: 0;
+  font-size: 12px;
+  padding: 7px 10px;
+}
+
+.linha-estoque:not(.cabecalho-estoque):hover {
+  background: #fafcfb;
+}
+
+@media (max-width: 600px) {
+  .tabela-estoque {
+    overflow-x: auto;
+  }
+
+  .linha-estoque {
+    min-width: 520px;
+    padding: 12px;
+    gap: 8px;
+  }
+}
+.historico-item-detalhe summary {
+  list-style: none;
+}
+
+.historico-item-detalhe summary::-webkit-details-marker {
+  display: none;
+}
+
+.seta-detalhe {
+  display: inline-block;
+  font-size: 11px;
+  color: #7b887f;
+  transition: transform 0.2s;
+}
+
+.historico-item-detalhe[open] .seta-detalhe {
+  transform: rotate(180deg);
+}
