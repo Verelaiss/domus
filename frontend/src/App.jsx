@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
+const ROTAS = {
+  Estoque: "/estoque",
+  Compras: "/compras",
+  Histórico: "/historico",
+};
+
+const paginaPelaUrl = () =>
+  Object.keys(ROTAS).find((nome) => ROTAS[nome] === window.location.pathname) ||
+  "Estoque";
+
 const CATEGORIAS = ["Alimentos", "Bebidas", "Limpeza", "Higiene", "Outros"];
 const UNIDADES_CONTROLE = [
   "pacote",
@@ -43,7 +53,30 @@ const agruparComprasPorData = (compras) => {
 };
 
 function App() {
-  const [pagina, setPagina] = useState("Estoque");
+  const [pagina, setPagina] = useState(paginaPelaUrl);
+
+  useEffect(() => {
+    if (!Object.values(ROTAS).includes(window.location.pathname)) {
+      window.history.replaceState(null, "", ROTAS.Estoque);
+    }
+
+    const atualizarPagina = () => {
+      setPagina(paginaPelaUrl());
+    };
+
+    window.addEventListener("popstate", atualizarPagina);
+
+    return () => {
+      window.removeEventListener("popstate", atualizarPagina);
+    };
+  }, []);
+
+  const navegarPara = (destino) => {
+    if (destino === pagina) return;
+
+    window.history.pushState(null, "", ROTAS[destino]);
+    setPagina(destino);
+  };
   const [produtos, setProdutos] = useState([]);
   const [compras, setCompras] = useState([]);
   const [listaCompras, setListaCompras] = useState([]);
@@ -307,7 +340,7 @@ function App() {
             key={item}
             type="button"
             className={pagina === item ? "ativo" : ""}
-            onClick={() => setPagina(item)}
+            onClick={() => navegarPara(item)}
           >
             {item}
           </button>
