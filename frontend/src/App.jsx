@@ -328,10 +328,10 @@ function App() {
     <div className="app">
       <header className="cabecalho">
         <div>
-          <h1>Domus</h1>
-          <p>Gestão da Casa</p>
+          <h1>OLIVIA.</h1>
+          <p>Sua casa sob controle.</p>
         </div>
-        <span className="identidade">Meu lar</span>
+        <span className="identidade">Ecl 4:12</span>
       </header>
 
       <nav className="navegacao">
