@@ -503,3 +503,94 @@
 .historico-item-detalhe[open] .seta-detalhe {
   transform: rotate(180deg);
 }
+/* ========================================
+   MODAL DE CONFIRMAÇÃO DE CONSUMO
+======================================== */
+
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-consumo {
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-consumo h2 {
+  margin: 0 0 16px;
+  color: #205c3f;
+  font-size: 22px;
+}
+
+.modal-consumo p {
+  margin: 0 0 20px;
+  line-height: 1.5;
+  color: #20352a;
+}
+
+.modal-informacao {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+  background: #f0f5f1;
+  border-radius: 10px;
+  color: #20352a;
+  font-size: 14px;
+}
+
+.modal-informacao strong {
+  font-size: 20px;
+  color: #205c3f;
+}
+
+.modal-acoes {
+  display: flex;
+  gap: 12px;
+}
+
+.modal-acoes button {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal-acoes button:first-child {
+  background: #ffffff;
+  color: #205c3f;
+  border: 1px solid #cbd9ce;
+}
+
+.modal-acoes button:last-child {
+  background: #205c3f;
+  color: #ffffff;
+  border: 1px solid #205c3f;
+}
+
+@media (max-width: 600px) {
+  .modal-consumo {
+    padding: 20px;
+  }
+
+  .modal-consumo h2 {
+    font-size: 20px;
+  }
+}

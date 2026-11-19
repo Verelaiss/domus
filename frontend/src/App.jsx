@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 const ROTAS = {
@@ -84,6 +84,46 @@ function App() {
   const [erro, setErro] = useState("");
   const [mensagemConsumo, setMensagemConsumo] = useState("");
   const [produtoConsumindo, setProdutoConsumindo] = useState(null);
+  const consumoEmAndamentoRef = useRef(false);
+  const [produtoParaConfirmar, setProdutoParaConfirmar] = useState(null);
+  const botaoCancelarRef = useRef(null);
+  const botaoOrigemRef = useRef(null);
+  useEffect(() => {
+    if (!produtoParaConfirmar) return;
+
+    botaoCancelarRef.current?.focus();
+
+    function controlarTeclado(evento) {
+      if (evento.key === "Escape") {
+        evento.preventDefault();
+        setProdutoParaConfirmar(null);
+      }
+
+      if (evento.key === "Tab") {
+        const cancelar = botaoCancelarRef.current;
+        const confirmar =
+          cancelar?.parentElement?.querySelectorAll("button")[1];
+
+        if (!cancelar || !confirmar) return;
+
+        if (evento.shiftKey && document.activeElement === cancelar) {
+          evento.preventDefault();
+          confirmar.focus();
+        } else if (!evento.shiftKey && document.activeElement === confirmar) {
+          evento.preventDefault();
+          cancelar.focus();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", controlarTeclado);
+
+    return () => {
+      document.removeEventListener("keydown", controlarTeclado);
+      botaoOrigemRef.current?.focus();
+    };
+  }, [produtoParaConfirmar]);
+
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
   const [buscaProduto, setBuscaProduto] = useState("");
   const [mostrarFormularioCompra, setMostrarFormularioCompra] = useState(false);
@@ -156,7 +196,9 @@ function App() {
   });
 
   async function registrarConsumo(produto) {
-    if (produtoConsumindo !== null) return;
+    if (consumoEmAndamentoRef.current) return;
+
+    consumoEmAndamentoRef.current = true;
     setProdutoConsumindo(produto.id);
     setMensagemConsumo("");
     try {
@@ -179,16 +221,14 @@ function App() {
             : [...anteriores, atualizado],
         );
       }
-      const restantes = disponivel(atualizado);
-      setMensagemConsumo(
-        `Consumo registrado! 1 ${textoUnidade(produto, 1)} de ${produto.nome} foi consumido. ` +
-          `Restam ${restantes} ${textoUnidade(produto, restantes)}.`,
-      );
+
+      setMensagemConsumo("Consumo registrado com sucesso!");
     } catch {
       setMensagemConsumo(
         "Não foi possível registrar o consumo. Tente novamente.",
       );
     } finally {
+      consumoEmAndamentoRef.current = false;
       setProdutoConsumindo(null);
     }
   }
@@ -326,6 +366,50 @@ function App() {
 
   return (
     <div className="app">
+      {produtoParaConfirmar && (
+        <div className="modal-fundo">
+          <div
+            className="modal-consumo"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-modal-consumo"
+          >
+            <h2 id="titulo-modal-consumo">Confirmar consumo</h2>
+
+            <p>
+              Confirma que o {textoUnidade(produtoParaConfirmar, 1)} em uso de{" "}
+              <strong>{produtoParaConfirmar.nome}</strong> acabou?
+            </p>
+
+            <div className="modal-informacao">
+              <span>Unidades fechadas em estoque</span>
+              <strong>{produtoParaConfirmar.pacotes_fechados}</strong>
+            </div>
+
+            <div className="modal-acoes">
+              <button
+                ref={botaoCancelarRef}
+                type="button"
+                onClick={() => setProdutoParaConfirmar(null)}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const produto = produtoParaConfirmar;
+                  setProdutoParaConfirmar(null);
+                  registrarConsumo(produto);
+                }}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="cabecalho">
         <div>
           <h1>OLIVIA.</h1>
@@ -429,14 +513,9 @@ function App() {
                         <button
                           type="button"
                           className="botao-consumir"
-                          onClick={() => {
-                            const atual = disponivel(produto);
-                            const confirmado = window.confirm(
-                              `Deseja registrar o término de 1 ${textoUnidade(produto, 1)} de ${produto.nome}?\n\n` +
-                                `Estoque atual: ${atual} ${textoUnidade(produto, atual)}.\n` +
-                                `Após a baixa: ${atual - 1} ${textoUnidade(produto, atual - 1)}.`,
-                            );
-                            if (confirmado) registrarConsumo(produto);
+                          onClick={(evento) => {
+                            botaoOrigemRef.current = evento.currentTarget;
+                            setProdutoParaConfirmar(produto);
                           }}
                           disabled={produtoConsumindo !== null}
                         >
