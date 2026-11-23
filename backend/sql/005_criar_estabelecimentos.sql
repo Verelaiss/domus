@@ -1,0 +1,10 @@
+CREATE TABLE estabelecimentos (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    tipo VARCHAR(50),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_estabelecimentos_nome_unico
+ON estabelecimentos (LOWER(TRIM(nome)));
