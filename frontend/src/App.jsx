@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
+// ============================================================
+// 1. CONFIGURAÇÕES E FUNÇÕES AUXILIARES
+// ============================================================
+
 const ROTAS = {
   Estoque: "/estoque",
   Compras: "/compras",
   Histórico: "/historico",
+  Financeiro: "/financeiro",
 };
 
 const paginaPelaUrl = () =>
@@ -52,7 +57,12 @@ const agruparComprasPorData = (compras) => {
   }, {});
 };
 
+// ============================================================
+// 2. COMPONENTE PRINCIPAL
+// ============================================================
+
 function App() {
+  // Navegação entre páginas
   const [pagina, setPagina] = useState(paginaPelaUrl);
 
   useEffect(() => {
@@ -77,17 +87,32 @@ function App() {
     window.history.pushState(null, "", ROTAS[destino]);
     setPagina(destino);
   };
+  // ----------------------------------------------------------
+  // 2.1. Estados: dados carregados da API
+  // ----------------------------------------------------------
   const [produtos, setProdutos] = useState([]);
   const [compras, setCompras] = useState([]);
+  const [estabelecimentos, setEstabelecimentos] = useState([]);
+
+  // 2.2. Estados: formulário de compras e estabelecimentos
+  const [estabelecimentoId, setEstabelecimentoId] = useState("");
+  const [estabelecimentoNome, setEstabelecimentoNome] = useState("");
+  const [itensCompra, setItensCompra] = useState([]);
+  const [valorTotalItem, setValorTotalItem] = useState("");
+
   const [listaCompras, setListaCompras] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+
+  // 2.3. Estados: consumo e confirmação
   const [mensagemConsumo, setMensagemConsumo] = useState("");
   const [produtoConsumindo, setProdutoConsumindo] = useState(null);
   const consumoEmAndamentoRef = useRef(false);
   const [produtoParaConfirmar, setProdutoParaConfirmar] = useState(null);
   const botaoCancelarRef = useRef(null);
   const botaoOrigemRef = useRef(null);
+
+  // 2.4. Acessibilidade: teclado do modal de consumo
   useEffect(() => {
     if (!produtoParaConfirmar) return;
 
@@ -124,11 +149,11 @@ function App() {
     };
   }, [produtoParaConfirmar]);
 
+  // 2.5. Estados: filtros, formulário e histórico
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
   const [buscaProduto, setBuscaProduto] = useState("");
   const [mostrarFormularioCompra, setMostrarFormularioCompra] = useState(false);
   const [buscaCompra, setBuscaCompra] = useState("");
-  const [produtoCompraId, setProdutoCompraId] = useState("");
   const [categoriaNovoProduto, setCategoriaNovoProduto] = useState("");
   const [unidadeControle, setUnidadeControle] = useState("pacote");
   const [quantidadeCompra, setQuantidadeCompra] = useState(1);
@@ -139,30 +164,37 @@ function App() {
   const [salvandoCompra, setSalvandoCompra] = useState(false);
   const [erroCompra, setErroCompra] = useState("");
   const [mensagemCompra, setMensagemCompra] = useState("");
+  const [mesFinanceiro, setMesFinanceiro] = useState(() => dataLocal().slice(0, 7));
   const [filtroHistorico, setFiltroHistorico] = useState("mes");
   const [buscaHistorico, setBuscaHistorico] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
+  // ----------------------------------------------------------
+  // 3. CARREGAMENTO INICIAL DOS DADOS
+  // ----------------------------------------------------------
   useEffect(() => {
     async function carregarDados() {
       setCarregando(true);
       setErro("");
       try {
         const respostas = await Promise.all(
-          ["/produtos", "/compras", "/lista-compras"].map((rota) =>
-            fetch(`/api${rota}`),
-          ),
+          [
+            "/produtos",
+            "/compras",
+            "/lista-compras",
+            "/financeiro/estabelecimentos",
+          ].map((rota) => fetch(`/api${rota}`)),
         );
         if (respostas.some((resposta) => !resposta.ok)) {
           throw new Error("Falha ao consultar a API.");
         }
-        const [dadosProdutos, dadosCompras, dadosLista] = await Promise.all(
-          respostas.map((resposta) => resposta.json()),
-        );
+        const [dadosProdutos, dadosCompras, dadosLista, dadosEstabelecimentos] =
+          await Promise.all(respostas.map((resposta) => resposta.json()));
         setProdutos(dadosProdutos);
         setCompras(dadosCompras);
         setListaCompras(dadosLista);
+        setEstabelecimentos(dadosEstabelecimentos);
       } catch {
         setErro("Não foi possível conectar ao backend do Domus.");
       } finally {
@@ -172,6 +204,9 @@ function App() {
     carregarDados();
   }, []);
 
+  // ----------------------------------------------------------
+  // 4. REGRAS DE APRESENTAÇÃO E FILTROS
+  // ----------------------------------------------------------
   const disponivel = (produto) =>
     produto.pacotes_em_uso + produto.pacotes_fechados;
 
@@ -180,6 +215,35 @@ function App() {
     if (quantidade === 1) return unidade;
     return unidade === "unidade" ? "unidades" : `${unidade}s`;
   };
+
+  // Painel financeiro: agrega registros já retornados por GET /api/compras.
+  // Os valores por item representam o custo total daquele item, não preço unitário.
+  const comprasDoMes = compras.filter((compra) =>
+    String(compra.data_compra || "").slice(0, 7) === mesFinanceiro,
+  );
+  const formatarMoeda = (valor) =>
+    Number(valor || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  const totalFinanceiro = comprasDoMes.reduce(
+    (total, compra) => total + Number(compra.valor_total || 0),
+    0,
+  );
+  const gastosCategoria = {};
+  const gastosEstabelecimento = {};
+  for (const compra of comprasDoMes) {
+    const estabelecimento = compra.estabelecimento_nome || "Não informado";
+    gastosEstabelecimento[estabelecimento] =
+      (gastosEstabelecimento[estabelecimento] || 0) + Number(compra.valor_total || 0);
+    for (const item of compra.itens || []) {
+      const categoria = item.categoria || "Outros";
+      gastosCategoria[categoria] =
+        (gastosCategoria[categoria] || 0) + Number(item.valor_total || 0);
+    }
+  }
+  const ordenarGastos = (gastos) =>
+    Object.entries(gastos).sort((a, b) => b[1] - a[1]);
 
   const categorias = [
     "Todas",
@@ -195,6 +259,9 @@ function App() {
     return correspondeCategoria && correspondeBusca;
   });
 
+  // ----------------------------------------------------------
+  // 5. AÇÕES: CONSUMO DE PRODUTOS
+  // ----------------------------------------------------------
   async function registrarConsumo(produto) {
     if (consumoEmAndamentoRef.current) return;
 
@@ -233,6 +300,9 @@ function App() {
     }
   }
 
+  // ----------------------------------------------------------
+  // 6. SELEÇÃO DE PRODUTOS PARA A COMPRA
+  // ----------------------------------------------------------
   const termoCompra = normalizar(buscaCompra);
   const correspondencias = termoCompra
     ? produtos.filter((produto) =>
@@ -242,130 +312,212 @@ function App() {
   const correspondenciaExata = produtos.find(
     (produto) => termoCompra && normalizar(produto.nome) === termoCompra,
   );
-  const produtoSelecionado = produtos.find(
-    (produto) => produto.id === Number(produtoCompraId),
-  );
-  const produtoValido =
-    produtoSelecionado && normalizar(produtoSelecionado.nome) === termoCompra;
-  const podeCriar =
-    termoCompra.length > 0 && !correspondenciaExata && !produtoValido;
+  // A correspondência exata já define automaticamente o produto selecionado.
+  const produtoSelecionado = correspondenciaExata;
+  const produtoValido = Boolean(produtoSelecionado);
+  const podeCriar = termoCompra.length > 0 && !produtoValido;
 
+  // ----------------------------------------------------------
+  // 7. AÇÕES: REGISTRO DE COMPRAS
+  // Envio integrado ao contrato CompraCompletaCadastro (vários itens).
+  // ----------------------------------------------------------
   function fecharFormularioCompra() {
     setMostrarFormularioCompra(false);
     setErroCompra("");
+  }
+
+  // Monta e valida um item tanto para adicionar à lista quanto para salvar direto.
+  function montarItemCompra() {
+    const quantidade = Number(quantidadeCompra);
+    const valor = Number(String(valorTotalItem).replace(",", "."));
+
+    if (!buscaCompra.trim()) {
+      throw new Error("Informe o nome do produto.");
+    }
+    if (!Number.isInteger(quantidade) || quantidade <= 0) {
+      throw new Error("Informe uma quantidade válida.");
+    }
+    if (valorTotalItem === "" || !Number.isFinite(valor) || valor < 0) {
+      throw new Error("Informe um valor válido para o produto.");
+    }
+    if (!produtoValido && (!podeCriar || !categoriaNovoProduto)) {
+      throw new Error("Digite um produto existente ou informe a categoria do novo produto.");
+    }
+
+    const unidades = unidadesPorEmbalagem === "" ? null : Number(unidadesPorEmbalagem);
+    const conteudo = conteudoPorUnidade === "" ? null : Number(conteudoPorUnidade);
+    if (unidades !== null && (!Number.isInteger(unidades) || unidades <= 0)) {
+      throw new Error("Informe uma quantidade válida de unidades por embalagem.");
+    }
+    if (conteudo !== null && (!Number.isFinite(conteudo) || conteudo <= 0)) {
+      throw new Error("Informe um conteúdo por unidade válido.");
+    }
+
+    return {
+      quantidade,
+      valor_total: valor.toFixed(2),
+      unidades_por_embalagem: unidades,
+      conteudo_por_unidade: conteudo,
+      unidade_medida: unidadeMedida || null,
+      ...(produtoValido
+        ? { produto_id: produtoSelecionado.id }
+        : {
+            nome: buscaCompra.trim(),
+            categoria: categoriaNovoProduto,
+            unidade_controle: unidadeControle,
+          }),
+    };
+  }
+
+  function adicionarItemCompra() {
+    try {
+      const novoItem = montarItemCompra();
+      setItensCompra((anteriores) => [...anteriores, novoItem]);
+      setBuscaCompra("");
+      setCategoriaNovoProduto("");
+      setUnidadeControle("pacote");
+      setQuantidadeCompra(1);
+      setValorTotalItem("");
+      setUnidadesPorEmbalagem("");
+      setConteudoPorUnidade("");
+      setUnidadeMedida("");
+      setErroCompra("");
+    } catch (erroValidacao) {
+      setErroCompra(erroValidacao.message);
+    }
+  }
+
+  function removerItemCompra(indice) {
+    setItensCompra((anteriores) =>
+      anteriores.filter((_, posicao) => posicao !== indice),
+    );
   }
 
   async function registrarCompra(evento) {
     evento.preventDefault();
     if (salvandoCompra) return;
 
-    const quantidade = Number(quantidadeCompra);
-    const novo = podeCriar;
-    const dadosValidos =
-      Number.isInteger(quantidade) &&
-      quantidade > 0 &&
-      Boolean(dataCompra) &&
-      dataCompra <= dataLocal() &&
-      (novo
-        ? Boolean(buscaCompra.trim() && categoriaNovoProduto)
-        : Boolean(produtoValido));
-
-    if (dataCompra > dataLocal()) {
-      setErroCompra("A data da compra não pode ser futura.");
+    // Inclui também o produto em edição, mesmo sem clicar em "Adicionar produto".
+    let itensParaSalvar = [...itensCompra];
+    if (buscaCompra.trim()) {
+      try {
+        itensParaSalvar.push(montarItemCompra());
+      } catch (erroValidacao) {
+        setErroCompra(erroValidacao.message);
+        return;
+      }
+    } else if (valorTotalItem !== "" || unidadesPorEmbalagem !== "" ||
+               conteudoPorUnidade !== "" || unidadeMedida !== "") {
+      setErroCompra("Há dados de um produto sem nome. Complete ou limpe os campos antes de salvar.");
       return;
     }
 
-    if (!dadosValidos) {
-      setErroCompra(
-        "Selecione um produto ou preencha os dados do novo produto.",
-      );
+    if (itensParaSalvar.length === 0) {
+      setErroCompra("Informe pelo menos um produto para registrar a compra.");
       return;
     }
 
-    if (novo && correspondencias.length > 0) {
-      const confirmado = window.confirm(
-        `Já existem produtos com nomes parecidos: ${correspondencias.map((p) => p.nome).join(", ")}.\n\nDeseja cadastrar "${buscaCompra.trim()}" como um produto diferente?`,
-      );
-      if (!confirmado) return;
+    if (!estabelecimentoId) {
+      setErroCompra("Selecione um estabelecimento.");
+      return;
     }
+
+    if (estabelecimentoId === "novo" && !estabelecimentoNome.trim()) {
+      setErroCompra("Informe o nome do novo estabelecimento.");
+      return;
+    }
+
+    if (!dataCompra || dataCompra > dataLocal()) {
+      setErroCompra("Informe uma data válida que não seja futura.");
+      return;
+    }
+
+    // A API aceita um estabelecimento existente OU o nome de um novo.
+    const estabelecimento =
+      estabelecimentoId === "novo"
+        ? { estabelecimento_nome: estabelecimentoNome.trim() }
+        : { estabelecimento_id: Number(estabelecimentoId) };
+
+    const dadosEnvio = {
+      ...estabelecimento,
+      data_compra: dataCompra,
+      itens: itensParaSalvar,
+    };
 
     setSalvandoCompra(true);
     setErroCompra("");
     setMensagemCompra("");
 
     try {
-      const rota = novo ? "/api/compras/novo-produto" : "/api/compras";
-      const dadosEnvio = novo
-        ? {
-            nome: buscaCompra.trim(),
-            categoria: categoriaNovoProduto.trim(),
-            unidade_controle: unidadeControle,
-            quantidade,
-            data_compra: dataCompra,
-          }
-        : {
-            produto_id: produtoSelecionado.id,
-            quantidade,
-            data_compra: dataCompra,
-          };
-      Object.assign(dadosEnvio, {
-        unidades_por_embalagem:
-          unidadesPorEmbalagem === "" ? null : Number(unidadesPorEmbalagem),
-        conteudo_por_unidade:
-          conteudoPorUnidade === "" ? null : Number(conteudoPorUnidade),
-        unidade_medida: unidadeMedida || null,
-      });
-
-      const resposta = await fetch(rota, {
+      const resposta = await fetch("/api/compras", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dadosEnvio),
       });
-      if (!resposta.ok) throw new Error("Falha ao registrar compra.");
 
-      const dados = await resposta.json();
-      const atualizado = dados.estoque_atualizado;
+      if (!resposta.ok) {
+        const erroApi = await resposta.json().catch(() => null);
+        const detalhe = erroApi?.detail;
+        const descricao =
+          typeof detalhe === "string"
+            ? detalhe
+            : "Não foi possível registrar a compra.";
+        throw new Error(descricao);
+      }
 
-      setProdutos((anteriores) =>
-        novo
-          ? [...anteriores, atualizado]
-          : anteriores.map((produto) =>
-              produto.id === atualizado.id ? atualizado : produto,
-            ),
-      );
-      setCompras((anteriores) =>
-        [dados.compra, ...anteriores].sort(
-          (a, b) => b.data_compra.localeCompare(a.data_compra) || b.id - a.id,
-        ),
-      );
-      setListaCompras((anteriores) =>
-        anteriores.filter((produto) => produto.id !== atualizado.id),
-      );
-
-      setMensagemCompra(
-        novo
-          ? "Produto cadastrado e compra registrada!"
-          : "Compra registrada com sucesso!",
-      );
-      setMostrarFormularioCompra(false);
-      setProdutoCompraId("");
+      // O POST foi confirmado. Não reenviar se uma consulta posterior falhar.
+      setItensCompra([]);
       setBuscaCompra("");
       setCategoriaNovoProduto("");
       setUnidadeControle("pacote");
       setQuantidadeCompra(1);
+      setValorTotalItem("");
       setUnidadesPorEmbalagem("");
       setConteudoPorUnidade("");
       setUnidadeMedida("");
       setDataCompra(dataLocal());
-    } catch {
-      setErroCompra("Não foi possível registrar a compra. Tente novamente.");
+      setEstabelecimentoId("");
+      setEstabelecimentoNome("");
+      setMostrarFormularioCompra(false);
+      setMensagemCompra("Compra registrada com sucesso!");
+
+      // Reconsultar garante que a tela receba o formato completo do histórico,
+      // os produtos novos e o estado atual do estoque.
+      try {
+        const rotas = [
+          "/api/produtos",
+          "/api/compras",
+          "/api/lista-compras",
+          "/api/financeiro/estabelecimentos",
+        ];
+        const respostas = await Promise.all(rotas.map((rota) => fetch(rota)));
+        if (respostas.some((resposta) => !resposta.ok)) {
+          throw new Error("Falha ao atualizar os dados.");
+        }
+        const [novosProdutos, novasCompras, novaLista, novosEstabelecimentos] =
+          await Promise.all(respostas.map((resposta) => resposta.json()));
+        setProdutos(novosProdutos);
+        setCompras(novasCompras);
+        setListaCompras(novaLista);
+        setEstabelecimentos(novosEstabelecimentos);
+      } catch {
+        setMensagemCompra(
+          "Compra registrada, mas não foi possível atualizar a tela. Recarregue a página para consultar os dados.",
+        );
+      }
+    } catch (erroRegistro) {
+      setErroCompra(erroRegistro.message || "Erro ao registrar a compra.");
     } finally {
       setSalvandoCompra(false);
     }
   }
 
+  // ============================================================
+  // 8. INTERFACE (JSX)
+  // ============================================================
   return (
     <div className="app">
+      {/* 8.1. Modal de confirmação de consumo */}
       {produtoParaConfirmar && (
         <div className="modal-fundo">
           <div
@@ -410,16 +562,26 @@ function App() {
         </div>
       )}
 
+      {/* 8.2. Cabeçalho e navegação */}
       <header className="cabecalho">
         <div>
-          <h1>OLIVIA.</h1>
+          <h1>
+            <button
+              type="button"
+              className="logo-home"
+              onClick={() => navegarPara("Estoque")}
+              aria-label="Voltar para o estoque"
+              title="Voltar para o estoque"
+            >
+              OLIVIA.
+            </button>
+          </h1>
           <p>Sua casa sob controle.</p>
         </div>
-        <span className="identidade">Ecl 4:12</span>
       </header>
 
       <nav className="navegacao">
-        {["Estoque", "Compras", "Histórico"].map((item) => (
+        {["Estoque", "Compras", "Histórico", "Financeiro"].map((item) => (
           <button
             key={item}
             type="button"
@@ -440,6 +602,7 @@ function App() {
           </p>
         )}
 
+        {/* 8.3. Página Estoque */}
         {!carregando && !erro && pagina === "Estoque" && (
           <section>
             <div className="titulo-secao">
@@ -532,6 +695,7 @@ function App() {
           </section>
         )}
 
+        {/* 8.4. Página Compras */}
         {!carregando && !erro && pagina === "Compras" && (
           <section>
             <div className="titulo-secao">
@@ -562,6 +726,43 @@ function App() {
             {mostrarFormularioCompra && (
               <form className="formulario-produto" onSubmit={registrarCompra}>
                 <h3>Registrar compra</h3>
+                <label htmlFor="estabelecimento-compra">Estabelecimento</label>
+                <select
+                  id="estabelecimento-compra"
+                  value={estabelecimentoId}
+                  onChange={(evento) => {
+                    setEstabelecimentoId(evento.target.value);
+                    setErroCompra("");
+                  }}
+                  required
+                >
+                  <option value="">Selecione um estabelecimento</option>
+                  {estabelecimentos.map((estabelecimento) => (
+                    <option key={estabelecimento.id} value={estabelecimento.id}>
+                      {estabelecimento.nome}
+                    </option>
+                  ))}
+                  <option value="novo">+ Novo estabelecimento</option>
+                </select>
+
+                {estabelecimentoId === "novo" && (
+                  <div>
+                    <label htmlFor="novo-estabelecimento">
+                      Nome do estabelecimento
+                    </label>
+
+                    <input
+                      id="novo-estabelecimento"
+                      type="text"
+                      placeholder="Ex.: Atacadão"
+                      value={estabelecimentoNome}
+                      onChange={(evento) =>
+                        setEstabelecimentoNome(evento.target.value)
+                      }
+                      required
+                    />
+                  </div>
+                )}
 
                 <label htmlFor="busca-compra">Produto</label>
                 <input
@@ -571,19 +772,14 @@ function App() {
                   value={buscaCompra}
                   onChange={(evento) => {
                     setBuscaCompra(evento.target.value);
-                    setProdutoCompraId("");
                     setErroCompra("");
                   }}
                   autoComplete="off"
-                  required
                 />
 
-                {correspondenciaExata && !produtoValido && (
-                  <p>Este produto já está cadastrado. Selecione-o abaixo.</p>
-                )}
                 {produtoValido && (
                   <p className="mensagem-consumo">
-                    Produto selecionado: {produtoSelecionado.nome}
+                    Produto identificado automaticamente: {produtoSelecionado.nome}
                   </p>
                 )}
                 {!produtoValido && correspondencias.length > 0 && (
@@ -599,7 +795,6 @@ function App() {
                         className="botao-cancelar"
                         style={{ margin: "0 8px 8px 0" }}
                         onClick={() => {
-                          setProdutoCompraId(String(produto.id));
                           setBuscaCompra(produto.nome);
                           setErroCompra("");
                         }}
@@ -670,8 +865,19 @@ function App() {
                   onChange={(evento) =>
                     setQuantidadeCompra(evento.target.value)
                   }
-                  required
                 />
+                <label htmlFor="valor-item">Valor total do produto (R$)</label>
+
+                <input
+                  id="valor-item"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Ex.: 23,97"
+                  value={valorTotalItem}
+                  onChange={(evento) => setValorTotalItem(evento.target.value)}
+                />
+
                 <label htmlFor="unidades-embalagem">
                   Unidades por embalagem (opcional)
                 </label>
@@ -727,6 +933,46 @@ function App() {
                   onChange={(evento) => setDataCompra(evento.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  className="botao-novo"
+                  onClick={adicionarItemCompra}
+                >
+                  + Adicionar produto à compra
+                </button>
+
+                {itensCompra.length > 0 && (
+                  <div className="lista">
+                    <h4>Produtos desta compra ({itensCompra.length})</h4>
+
+                    {itensCompra.map((item, indice) => {
+                      const produto = produtos.find(
+                        (p) => p.id === item.produto_id,
+                      );
+
+                      return (
+                        <details key={indice}>
+                          <summary>
+                            {item.nome || produto?.nome || "Produto"}
+                            {" · "}
+                            R$ {Number(item.valor_total).toFixed(2)}
+                          </summary>
+
+                          <p>Quantidade: {item.quantidade}</p>
+                          <p>
+                            Categoria: {item.categoria || produto?.categoria}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => removerItemCompra(indice)}
+                          >
+                            Remover produto
+                          </button>
+                        </details>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {erroCompra && (
                   <p className="erro" role="alert">
@@ -772,6 +1018,7 @@ function App() {
           </section>
         )}
 
+        {/* 8.5. Página Histórico */}
         {!carregando && !erro && pagina === "Histórico" && (
           <section>
             <div className="titulo-secao">
@@ -850,12 +1097,10 @@ function App() {
               const registros = compras
                 .filter((compra) => {
                   const data = compra.data_compra;
-                  const nome =
-                    produtos.find((produto) => produto.id === compra.produto_id)
-                      ?.nome ?? "";
-
-                  const correspondeNome = normalizar(nome).includes(
-                    normalizar(buscaHistorico),
+                  const correspondeNome = compra.itens.some((item) =>
+                    normalizar(item.produto_nome).includes(
+                      normalizar(buscaHistorico),
+                    ),
                   );
 
                   const correspondePeriodo =
@@ -923,127 +1168,222 @@ function App() {
                           </span>
                         </summary>
 
-                        {comprasDoDia.map((compra) => {
-                          const produto = produtos.find(
-                            (item) => item.id === compra.produto_id,
-                          );
-
-                          const nome =
-                            produto?.nome ?? `Produto #${compra.produto_id}`;
-
-                          const quantidadeTexto = `${compra.quantidade} ${textoUnidade(
-                            produto || { unidade_controle: "pacote" },
-                            compra.quantidade,
-                          )}`;
-
-                          const possuiDetalhes =
-                            compra.unidades_por_embalagem != null ||
-                            compra.conteudo_por_unidade != null ||
-                            Boolean(compra.unidade_medida);
-
-                          const conteudo = (
-                            <div
-                              style={{
-                                padding: "10px 14px",
-                                background: "#fafcfb",
-                                borderTop: "1px solid #e1e9e1",
-                                fontSize: 13,
-                                color: "#555",
-                              }}
-                            >
-                              {compra.unidades_por_embalagem != null && (
-                                <p style={{ margin: "4px 0" }}>
-                                  Unidades por embalagem:{" "}
-                                  <strong>
-                                    {compra.unidades_por_embalagem}
-                                  </strong>
-                                </p>
-                              )}
-
-                              {compra.conteudo_por_unidade != null && (
-                                <p style={{ margin: "4px 0" }}>
-                                  Conteúdo por unidade:{" "}
-                                  <strong>
-                                    {compra.conteudo_por_unidade}{" "}
-                                    {compra.unidade_medida || ""}
-                                  </strong>
-                                </p>
-                              )}
-
-                              {compra.conteudo_por_unidade == null &&
-                                compra.unidade_medida && (
-                                  <p style={{ margin: "4px 0" }}>
-                                    Unidade de medida:{" "}
-                                    <strong>{compra.unidade_medida}</strong>
-                                  </p>
-                                )}
-                            </div>
-                          );
-
-                          return possuiDetalhes ? (
-                            <details
-                              key={compra.id}
-                              className="historico-item-detalhe"
-                              style={{ borderTop: "1px solid #e1e9e1" }}
-                            >
-                              <summary
-                                style={{
-                                  padding: "12px 14px",
-                                  cursor: "pointer",
-                                  listStyle: "none",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    gap: 12,
-                                  }}
-                                >
-                                  <strong>{nome}</strong>
-
-                                  <span
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: 8,
-                                    }}
-                                  >
-                                    {quantidadeTexto}
-                                    <span
-                                      className="seta-detalhe"
-                                      aria-hidden="true"
-                                    >
-                                      ▾
-                                    </span>
-                                  </span>
-                                </span>
-                              </summary>
-                              {conteudo}
-                            </details>
-                          ) : (
-                            <div
-                              key={compra.id}
+                        {comprasDoDia.map((compra) => (
+                          <details
+                            key={compra.id}
+                            className="historico-item-detalhe"
+                          >
+                            <summary
                               style={{
                                 padding: "12px 14px",
-                                borderTop: "1px solid #e1e9e1",
+                                cursor: "pointer",
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
                                 gap: 12,
                               }}
                             >
-                              <strong>{nome}</strong>
-                              <span>{quantidadeTexto}</span>
-                            </div>
-                          );
-                        })}
+                              <strong>{compra.estabelecimento_nome}</strong>
+
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 10,
+                                }}
+                              >
+                                {Number(compra.valor_total).toLocaleString(
+                                  "pt-BR",
+                                  {
+                                    style: "currency",
+                                    currency: "BRL",
+                                  },
+                                )}
+
+                                <span
+                                  className="seta-detalhe"
+                                  aria-hidden="true"
+                                >
+                                  ▾
+                                </span>
+                              </span>
+                            </summary>
+
+                            {compra.itens.map((item) => (
+                              <div
+                                key={item.id}
+                                style={{
+                                  padding: "10px 14px",
+                                  borderTop: "1px solid #e1e9e1",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  gap: 12,
+                                }}
+                              >
+                                <span>
+                                  {item.produto_nome} · {item.quantidade}
+                                </span>
+
+                                <strong>
+                                  {Number(item.valor_total).toLocaleString(
+                                    "pt-BR",
+                                    {
+                                      style: "currency",
+                                      currency: "BRL",
+                                    },
+                                  )}
+                                </strong>
+                              </div>
+                            ))}
+                          </details>
+                        ))}
                       </details>
                     ))}
                 </div>
               );
             })()}
+          </section>
+        )}
+
+        {/* 8.6. Painel Financeiro */}
+        {!carregando && !erro && pagina === "Financeiro" && (
+          <section className="fin-painel">
+            <header className="fin-cabecalho">
+              <div>
+                <span className="fin-sobretitulo">VISÃO GERAL</span>
+                <h2>Financeiro</h2>
+                <p>Acompanhe os gastos com compras da casa.</p>
+              </div>
+              <div className="fin-periodo">
+                <label htmlFor="mes-financeiro">Mês de referência</label>
+                <input
+                  id="mes-financeiro"
+                  type="month"
+                  value={mesFinanceiro}
+                  max={dataLocal().slice(0, 7)}
+                  onChange={(evento) => setMesFinanceiro(evento.target.value)}
+                />
+              </div>
+            </header>
+
+            <div className="fin-indicadores">
+              <article className="fin-indicador fin-indicador-principal">
+                <div className="fin-indicador-topo">
+                  <span>Total gasto no mês</span>
+                  <span className="fin-icone" aria-hidden="true">◈</span>
+                </div>
+                <strong>{formatarMoeda(totalFinanceiro)}</strong>
+                <span className="fin-indicador-legenda">
+                  {new Date(`${mesFinanceiro}-01T12:00:00`).toLocaleDateString("pt-BR", {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
+              </article>
+              <article className="fin-indicador fin-indicador-secundario">
+                <div className="fin-indicador-topo">
+                  <span>Compras realizadas</span>
+                  <span className="fin-icone" aria-hidden="true">▤</span>
+                </div>
+                <strong>{comprasDoMes.length}</strong>
+                <span className="fin-indicador-legenda">Registros no período</span>
+              </article>
+            </div>
+
+            {comprasDoMes.length === 0 ? (
+              <div className="fin-vazio">
+                <strong>Nenhuma compra neste mês</strong>
+                <p>Selecione outro período para visualizar os gastos.</p>
+              </div>
+            ) : (
+              <div className="fin-detalhes">
+                <article className="fin-cartao">
+                  <div className="fin-cartao-cabecalho">
+                    <h3>Gastos por categoria</h3>
+                    <p>Distribuição das despesas</p>
+                  </div>
+                  {(() => {
+                    const categoriasOrdenadas = ordenarGastos(gastosCategoria);
+                    const cores = ["#267450", "#98c5a8", "#d4a96c", "#749eab", "#a8a3c9", "#a4b6a7"];
+                    const somaCategorias = categoriasOrdenadas.reduce((acc, [, valor]) => acc + valor, 0);
+                    let posicao = 0;
+                    const segmentos = categoriasOrdenadas.map(([, valor], indice) => {
+                      const inicio = posicao;
+                      posicao += somaCategorias > 0 ? valor / somaCategorias * 100 : 0;
+                      return `${cores[indice % cores.length]} ${inicio}% ${posicao}%`;
+                    });
+                    const principal = categoriasOrdenadas[0];
+                    const percentualPrincipal = somaCategorias > 0
+                      ? (principal[1] / somaCategorias * 100).toLocaleString("pt-BR", {
+                          maximumFractionDigits: 1,
+                        })
+                      : "0";
+
+                    return (
+                      <div className="fin-categorias-layout">
+                        <div
+                          className="fin-rosca"
+                          role="img"
+                          aria-label={`Distribuição de gastos por categoria: ${categoriasOrdenadas.map(([nome, valor]) => `${nome}, ${formatarMoeda(valor)}`).join("; ")}`}
+                          style={{
+                            background: somaCategorias > 0
+                              ? `conic-gradient(${segmentos.join(", ")})`
+                              : "#e6eee8",
+                          }}
+                        >
+                          <div className="fin-rosca-centro">
+                            <strong>{percentualPrincipal}%</strong>
+                            <span>{principal?.[0] || "Sem dados"}</span>
+                          </div>
+                        </div>
+                        <div className="fin-legenda">
+                          {categoriasOrdenadas.map(([categoria, valor], indice) => (
+                            <div className="fin-legenda-item" key={categoria}>
+                              <span
+                                className="fin-legenda-cor"
+                                style={{ background: cores[indice % cores.length] }}
+                                aria-hidden="true"
+                              />
+                              <span className="fin-legenda-nome">{categoria}</span>
+                              <strong>{formatarMoeda(valor)}</strong>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </article>
+
+                <article className="fin-cartao">
+                  <div className="fin-cartao-cabecalho">
+                    <h3>Onde você mais gastou</h3>
+                    <p>Despesas por estabelecimento</p>
+                  </div>
+                  <div className="fin-estabelecimentos">
+                    {ordenarGastos(gastosEstabelecimento).map(([nome, valor]) => (
+                      <div className="fin-estabelecimento" key={nome}>
+                        <div className="fin-estabelecimento-linha">
+                          <span>{nome}</span>
+                          <strong>{formatarMoeda(valor)}</strong>
+                        </div>
+                        <div className="fin-barra" aria-hidden="true">
+                          <div
+                            style={{
+                              width: `${totalFinanceiro > 0 ? Math.min(100, (valor / totalFinanceiro) * 100) : 0}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="fin-percentual">
+                          {totalFinanceiro > 0
+                            ? `${(valor / totalFinanceiro * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do total`
+                            : "0% do total"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              </div>
+            )}
           </section>
         )}
       </main>

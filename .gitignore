@@ -18,3 +18,15 @@ Thumbs.db
 
 # Arquivos de backup
 *.bak
+
+# Backups locais
+/backups/
+/backend/*.backup-*
+
+# Ambiente e arquivos sensíveis
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
