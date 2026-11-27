@@ -12,29 +12,64 @@
    02. CABEÇALHO E IDENTIDADE
 ======================================== */
 
+/* O nome e o slogan formam o centro visual da página. */
 .cabecalho {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
   padding: 20px 0 28px;
 }
 
 .cabecalho h1 {
   margin: 0;
   font-size: 36px;
+  line-height: 1.2;
   color: #17613d;
 }
 
-/* Textos secundários da interface */
-.cabecalho p,
+/* Mantém o logo clicável com aparência de texto. */
+.logo-home {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.logo-home:hover {
+  opacity: 0.85;
+}
+
+.logo-home:focus-visible {
+  outline: 2px solid #17613d;
+  outline-offset: 5px;
+  border-radius: 4px;
+}
+
+/* Slogan centralizado. */
+.cabecalho p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  color: #718078;
+}
+
+/* Textos secundários das demais seções. */
 .titulo-secao p,
 .produto p {
   margin: 5px 0 0;
   color: #718078;
 }
 
-/* Identificação do lar e contador de produtos */
-.identidade,
+/* Contador de produtos no estoque. */
 .contador {
   background: #e3eee6;
   color: #17613d;
@@ -593,4 +628,144 @@
   .modal-consumo h2 {
     font-size: 20px;
   }
+}
+
+/* ========================================
+   12. PAINEL FINANCEIRO
+======================================== */
+
+/* OLIVIA | Painel financeiro, sem alterar os estilos das outras telas */
+.fin-painel {
+  --fin-verde: #185c3d;
+  --fin-texto: #173d2c;
+  --fin-secundario: #668274;
+  color: var(--fin-texto);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  padding-bottom: 28px;
+}
+
+.fin-cabecalho {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 6px 0 24px;
+}
+.fin-sobretitulo {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  color: #4d8970;
+  margin-bottom: 8px;
+}
+.fin-cabecalho h2 {
+  font-family: inherit;
+  color: var(--fin-texto);
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  line-height: 1.2;
+  margin: 0 0 6px;
+}
+.fin-cabecalho p {
+  margin: 0;
+  color: var(--fin-secundario);
+  font-size: .88rem;
+}
+.fin-periodo { display: grid; gap: 6px; min-width: 180px; }
+.fin-periodo label { font-family: inherit; font-size: .75rem; font-weight: 600; color: #587565; }
+.fin-periodo input[type="month"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d7e6da;
+  border-radius: 9px;
+  background: white;
+  color: var(--fin-texto);
+  font: inherit;
+  font-size: .86rem;
+}
+.fin-indicadores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.fin-indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 148px;
+  padding: 20px;
+  border-radius: 15px;
+  box-sizing: border-box;
+}
+.fin-indicador-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: .83rem; }
+.fin-icone { font-family: "Segoe UI Symbol", sans-serif; font-size: 1.15rem; opacity: .8; }
+.fin-indicador strong {
+  font-family: inherit;
+  font-size: clamp(1.6rem, 4vw, 2.35rem);
+  font-weight: 750;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.fin-indicador-legenda { font-size: .76rem; margin-top: auto; }
+.fin-indicador-principal { background: #185c3d; color: white; }
+.fin-indicador-principal .fin-indicador-topo,
+.fin-indicador-principal .fin-indicador-legenda { color: #c8e9d6; }
+.fin-indicador-secundario { background: white; border: 1px solid #dbe8de; color: #173d2c; }
+.fin-indicador-secundario .fin-indicador-topo,
+.fin-indicador-secundario .fin-indicador-legenda { color: #668274; }
+
+.fin-detalhes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.fin-cartao { background: white; border: 1px solid #dbe8de; border-radius: 15px; padding: 20px; min-width: 0; }
+.fin-cartao-cabecalho h3 { font-family: inherit; font-size: 1rem; color: #173d2c; margin: 0 0 5px; }
+.fin-cartao-cabecalho p { color: #789183; font-size: .77rem; margin: 0; }
+.fin-categorias-layout { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding-top: 24px; }
+.fin-rosca {
+  width: 152px;
+  height: 152px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+.fin-rosca-centro {
+  box-sizing: border-box;
+  width: 72%;
+  height: 72%;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
+  padding: 8px;
+}
+.fin-rosca-centro strong { font-size: 1.3rem; color: #173d2c; }
+.fin-rosca-centro span { font-size: .7rem; color: #668274; overflow-wrap: anywhere; }
+.fin-legenda { display: grid; gap: 14px; flex: 1 1 135px; min-width: 0; }
+.fin-legenda-item { display: grid; grid-template-columns: 10px minmax(0, 1fr); align-items: baseline; column-gap: 8px; row-gap: 3px; font-size: .8rem; }
+.fin-legenda-cor { width: 9px; height: 9px; border-radius: 50%; align-self: center; }
+.fin-legenda-nome { color: #587565; overflow-wrap: anywhere; }
+.fin-legenda-item strong { grid-column: 2; font-size: .9rem; }
+.fin-estabelecimentos { display: grid; gap: 20px; padding-top: 24px; }
+.fin-estabelecimento-linha { display: flex; justify-content: space-between; gap: 12px; font-size: .84rem; }
+.fin-estabelecimento-linha span { font-weight: 600; overflow-wrap: anywhere; }
+.fin-estabelecimento-linha strong { white-space: nowrap; }
+.fin-barra { margin-top: 10px; height: 9px; border-radius: 99px; background: #e8f1eb; overflow: hidden; }
+.fin-barra > div { height: 100%; border-radius: inherit; background: #267450; }
+.fin-percentual { display: block; text-align: right; margin-top: 5px; color: #82998b; font-size: .71rem; }
+.fin-vazio { padding: 36px 24px; background: #f5f9f6; border: 1px dashed #cbded0; border-radius: 14px; text-align: center; }
+.fin-vazio p { color: #668274; margin-bottom: 0; }
+@media (max-width: 650px) {
+  .fin-cabecalho { align-items: stretch; }
+  .fin-periodo { width: 100%; }
+  .fin-indicadores, .fin-detalhes { grid-template-columns: minmax(0, 1fr); }
+  .fin-indicador { min-height: 132px; padding: 18px; }
+  .fin-cartao { padding: 18px; }
 }

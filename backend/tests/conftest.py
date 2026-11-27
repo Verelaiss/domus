@@ -1,9 +1,9 @@
 import os
 
+# Deve ser definido antes de importar qualquer módulo do projeto.
 os.environ["DB_NAME"] = "domus_test_db"
 
 import pytest
-
 from database import conectar
 
 
@@ -16,8 +16,14 @@ def limpar_banco_de_testes():
             )
 
         with conexao.cursor() as cursor:
-            cursor.execute(
-                "TRUNCATE TABLE movimentacoes_estoque, compras, produtos"
-            )
+            cursor.execute("""
+                TRUNCATE TABLE
+                    movimentacoes_estoque,
+                    itens_compra,
+                    compras,
+                    produtos,
+                    estabelecimentos
+                RESTART IDENTITY CASCADE
+            """)
 
     yield
